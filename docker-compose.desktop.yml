@@ -1,0 +1,251 @@
+# Virtual Queue Management System - Docker Desktop Production
+version: '3.8'
+
+services:
+  # Virtual Queue API
+  virtualqueue-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    container_name: virtualqueue-api
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=virtualqueue_prod
+      - DB_USER=virtualqueue_user
+      - DB_PASSWORD=${DB_PASSWORD:-VirtualQueue123!}
+      - REDIS_CONNECTION_STRING=redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-Redis123!}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-YourSuperSecretKeyThatIsAtLeast32CharactersLong!}
+      - JWT_ISSUER=VirtualQueue-Production
+      - JWT_AUDIENCE=VirtualQueueUsers-Production
+      - JWT_EXPIRATION_MINUTES=60
+      - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
+      - SMTP_PORT=587
+      - SMTP_USERNAME=${SMTP_USERNAME:-noreply@virtualqueue.com}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-your-app-password}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@virtualqueue.com}
+      - FROM_NAME=Virtual Queue System
+      - SMS_PROVIDER=${SMS_PROVIDER:-Twilio}
+      - SMS_API_KEY=${SMS_API_KEY:-your-twilio-api-key}
+      - SMS_API_SECRET=${SMS_API_SECRET:-your-twilio-api-secret}
+      - SMS_FROM_NUMBER=${SMS_FROM_NUMBER:-+1234567890}
+      - WHATSAPP_PROVIDER=${WHATSAPP_PROVIDER:-Twilio}
+      - WHATSAPP_API_KEY=${WHATSAPP_API_KEY:-your-twilio-api-key}
+      - WHATSAPP_API_SECRET=${WHATSAPP_API_SECRET:-your-twilio-api-secret}
+      - WHATSAPP_FROM_NUMBER=${WHATSAPP_FROM_NUMBER:-+1234567890}
+      - RATE_LIMIT_PER_MINUTE=100
+      - RATE_LIMIT_BURST=200
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
+      - BACKUP_STORAGE_PROVIDER=${BACKUP_STORAGE_PROVIDER:-Local}
+      - BACKUP_STORAGE_PATH=${BACKUP_STORAGE_PATH:-/backups}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - virtualqueue-network
+    volumes:
+      - ./logs:/app/logs
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: virtualqueue-postgres
+    environment:
+      - POSTGRES_DB=virtualqueue_prod
+      - POSTGRES_USER=virtualqueue_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-VirtualQueue123!}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U virtualqueue_user -d virtualqueue_prod"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - virtualqueue-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: virtualqueue-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-Redis123!}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - virtualqueue-network
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: virtualqueue-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--web.listen-address=0.0.0.0:9090'
+    restart: unless-stopped
+    networks:
+      - virtualqueue-network
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: virtualqueue-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=redis-datasource
+      - GF_SERVER_DOMAIN=localhost
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    restart: unless-stopped
+    networks:
+      - virtualqueue-network
+
+  # PostgreSQL Exporter
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: virtualqueue-postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://virtualqueue_user:${DB_PASSWORD:-VirtualQueue123!}@postgres:5432/virtualqueue_prod?sslmode=disable
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - virtualqueue-network
+
+  # Redis Exporter
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: virtualqueue-redis-exporter
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-Redis123!}
+    ports:
+      - "9121:9121"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - virtualqueue-network
+
+  # Node Exporter (System Metrics)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: virtualqueue-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    networks:
+      - virtualqueue-network
+
+  # Alertmanager
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: virtualqueue-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager-enhanced.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--web.listen-address=0.0.0.0:9093'
+    restart: unless-stopped
+    networks:
+      - virtualqueue-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: virtualqueue-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - virtualqueue-api
+    restart: unless-stopped
+    networks:
+      - virtualqueue-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+
+networks:
+  virtualqueue-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

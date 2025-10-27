@@ -1,0 +1,264 @@
+# Virtual Queue Management System - Business & Performance Alerts
+# This file contains alert rules for business metrics and performance monitoring
+
+groups:
+  - name: virtualqueue.business
+    rules:
+      # Business Metrics Alerts
+      - alert: LowUserEngagement
+        expr: virtualqueue_active_users_total < 10
+        for: 30m
+        labels:
+          severity: info
+          service: business
+          team: business
+        annotations:
+          summary: "Low user engagement"
+          description: "Active user count is {{ $value }} for more than 30 minutes."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/low-engagement"
+
+      - alert: QueueProcessingStalled
+        expr: rate(virtualqueue_users_dequeued_total[10m]) == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: queue
+          team: business
+        annotations:
+          summary: "Queue processing stalled"
+          description: "No users have been dequeued in the last 10 minutes."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/queue-stalled"
+
+      - alert: HighQueueAbandonmentRate
+        expr: rate(virtualqueue_users_abandoned_total[5m]) / rate(virtualqueue_users_enqueued_total[5m]) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          service: queue
+          team: business
+        annotations:
+          summary: "High queue abandonment rate"
+          description: "Queue abandonment rate is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-abandonment"
+
+      - alert: PeakHourTraffic
+        expr: rate(virtualqueue_users_enqueued_total[5m]) > 100
+        for: 2m
+        labels:
+          severity: info
+          service: queue
+          team: business
+        annotations:
+          summary: "Peak hour traffic detected"
+          description: "High user enqueue rate: {{ $value }} users/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/peak-traffic"
+
+      # Performance Alerts
+      - alert: SlowQueueProcessing
+        expr: virtualqueue_average_processing_time_seconds > 60
+        for: 5m
+        labels:
+          severity: warning
+          service: queue
+          team: platform
+        annotations:
+          summary: "Slow queue processing"
+          description: "Average processing time is {{ $value }}s."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/slow-processing"
+
+      - alert: HighQueueLatency
+        expr: virtualqueue_queue_latency_seconds > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: queue
+          team: platform
+        annotations:
+          summary: "High queue latency"
+          description: "Queue latency is {{ $value }}s."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-latency"
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: pg_stat_database_numbackends / pg_stat_database_max_connections > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+          team: platform
+        annotations:
+          summary: "Database connection pool exhausted"
+          description: "Connection pool utilization is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/db-pool-exhausted"
+
+      - alert: RedisConnectionPoolExhausted
+        expr: redis_connected_clients / redis_max_clients > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          service: cache
+          team: platform
+        annotations:
+          summary: "Redis connection pool exhausted"
+          description: "Redis connection pool utilization is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/redis-pool-exhausted"
+
+      # Capacity Planning Alerts
+      - alert: ApproachingCapacityLimit
+        expr: virtualqueue_queue_capacity_utilization_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: queue
+          team: business
+        annotations:
+          summary: "Approaching capacity limit"
+          description: "Queue capacity utilization is {{ $value }}%."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/capacity-warning"
+
+      - alert: StorageSpaceWarning
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.2
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          team: platform
+        annotations:
+          summary: "Storage space warning"
+          description: "Available storage is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/storage-warning"
+
+      - alert: MemoryPressure
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          team: platform
+        annotations:
+          summary: "Memory pressure detected"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/memory-pressure"
+
+      # SLA Alerts
+      - alert: SLABreachResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: critical
+          service: api
+          team: platform
+        annotations:
+          summary: "SLA breach: Response time"
+          description: "95th percentile response time is {{ $value }}s (SLA: 1s)."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/sla-response-time"
+
+      - alert: SLABreachAvailability
+        expr: up{job="virtualqueue-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          team: platform
+        annotations:
+          summary: "SLA breach: Availability"
+          description: "API service is down (SLA: 99.9% uptime)."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/sla-availability"
+
+      - alert: SLABreachQueueProcessing
+        expr: virtualqueue_average_wait_time_seconds > 180
+        for: 5m
+        labels:
+          severity: critical
+          service: queue
+          team: business
+        annotations:
+          summary: "SLA breach: Queue processing"
+          description: "Average wait time is {{ $value }}s (SLA: 3 minutes)."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/sla-queue-processing"
+
+      # Quality of Service Alerts
+      - alert: LowServiceQuality
+        expr: (rate(http_requests_total{status=~"2.."}[5m]) / rate(http_requests_total[5m])) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          team: platform
+        annotations:
+          summary: "Low service quality"
+          description: "Success rate is {{ $value | humanizePercentage }} (target: 95%)."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/low-quality"
+
+      - alert: HighErrorRateByEndpoint
+        expr: rate(http_requests_total{status=~"5.."}[5m]) by (endpoint) / rate(http_requests_total[5m]) by (endpoint) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: api
+          team: platform
+        annotations:
+          summary: "High error rate on endpoint"
+          description: "Error rate on {{ $labels.endpoint }} is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/endpoint-errors"
+
+      # User Experience Alerts
+      - alert: PoorUserExperience
+        expr: virtualqueue_user_satisfaction_score < 3.0
+        for: 10m
+        labels:
+          severity: warning
+          service: ux
+          team: business
+        annotations:
+          summary: "Poor user experience"
+          description: "User satisfaction score is {{ $value }} (scale: 1-5)."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/poor-ux"
+
+      - alert: HighBounceRate
+        expr: rate(virtualqueue_users_bounced_total[5m]) / rate(virtualqueue_users_enqueued_total[5m]) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+          service: ux
+          team: business
+        annotations:
+          summary: "High bounce rate"
+          description: "User bounce rate is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-bounce"
+
+      # Operational Alerts
+      - alert: ConfigurationDrift
+        expr: virtualqueue_config_version != virtualqueue_expected_config_version
+        for: 0m
+        labels:
+          severity: warning
+          service: config
+          team: platform
+        annotations:
+          summary: "Configuration drift detected"
+          description: "Current config version {{ $labels.config_version }} != expected {{ $labels.expected_version }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/config-drift"
+
+      - alert: ServiceDependencyDown
+        expr: up{job=~"postgres|redis|notification-service|webhook-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: dependencies
+          team: platform
+        annotations:
+          summary: "Service dependency down"
+          description: "Critical service dependency {{ $labels.job }} is down."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/dependency-down"
+
+      - alert: HealthCheckFailure
+        expr: virtualqueue_health_check_status == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: health
+          team: platform
+        annotations:
+          summary: "Health check failure"
+          description: "Service health check is failing."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/health-check-failure"

@@ -1,0 +1,388 @@
+# Virtual Queue Management System - Critical System Alerts
+# This file contains comprehensive alert rules for all critical system events
+
+groups:
+  - name: virtualqueue.critical
+    rules:
+      # API Service Alerts
+      - alert: VirtualQueueAPIDown
+        expr: up{job="virtualqueue-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          team: platform
+        annotations:
+          summary: "Virtual Queue API is down"
+          description: "The Virtual Queue API service has been down for more than 1 minute."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/api-down"
+
+      - alert: HighAPIErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+          team: platform
+        annotations:
+          summary: "High API error rate detected"
+          description: "API error rate is {{ $value | humanizePercentage }} for more than 2 minutes."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-error-rate"
+
+      - alert: HighAPIResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          team: platform
+        annotations:
+          summary: "High API response time"
+          description: "95th percentile response time is {{ $value }}s for more than 5 minutes."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-response-time"
+
+      # Database Alerts
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+          team: platform
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL database has been down for more than 1 minute."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/database-down"
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_database_numbackends > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: database
+          team: platform
+        annotations:
+          summary: "High PostgreSQL connection count"
+          description: "PostgreSQL has {{ $value }} active connections."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-db-connections"
+
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_database_tup_returned[5m]) < 100
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          team: platform
+        annotations:
+          summary: "PostgreSQL slow queries detected"
+          description: "PostgreSQL query performance is degraded."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/slow-queries"
+
+      # Redis Alerts
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cache
+          team: platform
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis cache has been down for more than 1 minute."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/redis-down"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 2m
+        labels:
+          severity: warning
+          service: cache
+          team: platform
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/redis-memory"
+
+      - alert: RedisLowCacheHitRate
+        expr: redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) < 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+          team: platform
+        annotations:
+          summary: "Redis low cache hit rate"
+          description: "Redis cache hit rate is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/redis-hit-rate"
+
+      # Queue Management Alerts
+      - alert: HighQueueLength
+        expr: virtualqueue_queue_length_total > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: queue
+          team: business
+        annotations:
+          summary: "High queue length detected"
+          description: "Queue length is {{ $value }} users for more than 5 minutes."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-queue-length"
+
+      - alert: QueueCapacityExceeded
+        expr: virtualqueue_queue_capacity_utilization_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: queue
+          team: business
+        annotations:
+          summary: "Queue capacity exceeded"
+          description: "Queue capacity utilization is {{ $value }}%."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/queue-capacity"
+
+      - alert: LongWaitTimes
+        expr: virtualqueue_average_wait_time_seconds > 300
+        for: 10m
+        labels:
+          severity: warning
+          service: queue
+          team: business
+        annotations:
+          summary: "Long wait times detected"
+          description: "Average wait time is {{ $value }}s for more than 10 minutes."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/long-wait-times"
+
+      # Notification System Alerts
+      - alert: NotificationServiceDown
+        expr: up{job="notification-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: notifications
+          team: platform
+        annotations:
+          summary: "Notification service is down"
+          description: "Notification service has been down for more than 1 minute."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/notification-down"
+
+      - alert: HighNotificationFailureRate
+        expr: rate(virtualqueue_notifications_failed_total[5m]) / rate(virtualqueue_notifications_sent_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: notifications
+          team: platform
+        annotations:
+          summary: "High notification failure rate"
+          description: "Notification failure rate is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/notification-failures"
+
+      - alert: NotificationQueueBacklog
+        expr: virtualqueue_email_queue_length + virtualqueue_sms_queue_length + virtualqueue_whatsapp_queue_length > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: notifications
+          team: platform
+        annotations:
+          summary: "Notification queue backlog"
+          description: "Total notification queue length is {{ $value }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/notification-backlog"
+
+      # Webhook Alerts
+      - alert: WebhookServiceDown
+        expr: up{job="webhook-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: webhooks
+          team: platform
+        annotations:
+          summary: "Webhook service is down"
+          description: "Webhook service has been down for more than 1 minute."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/webhook-down"
+
+      - alert: HighWebhookFailureRate
+        expr: rate(virtualqueue_webhooks_failed_total[5m]) / rate(virtualqueue_webhooks_delivered_total[5m]) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+          service: webhooks
+          team: platform
+        annotations:
+          summary: "High webhook failure rate"
+          description: "Webhook failure rate is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/webhook-failures"
+
+      # System Resource Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          team: platform
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-cpu"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          team: platform
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-memory"
+
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+          team: platform
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/low-disk-space"
+
+      - alert: HighDiskIO
+        expr: rate(node_disk_io_time_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          team: platform
+        annotations:
+          summary: "High disk I/O"
+          description: "Disk I/O is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-disk-io"
+
+      # Security Alerts
+      - alert: HighAuthenticationFailures
+        expr: rate(virtualqueue_auth_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate is {{ $value }} failures/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/auth-failures"
+
+      - alert: SuspiciousAPIUsage
+        expr: rate(http_requests_total[5m]) by (client_ip) > 100
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Suspicious API usage detected"
+          description: "High request rate from {{ $labels.client_ip }}: {{ $value }} req/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/suspicious-usage"
+
+      - alert: RateLimitExceeded
+        expr: rate(virtualqueue_rate_limit_exceeded_total[5m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Rate limit exceeded"
+          description: "Rate limit exceeded {{ $value }} times in the last 5 minutes."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/rate-limit"
+
+      # Backup Alerts
+      - alert: BackupFailed
+        expr: virtualqueue_backup_status == 0
+        for: 0m
+        labels:
+          severity: critical
+          service: backup
+          team: platform
+        annotations:
+          summary: "Backup failed"
+          description: "Automated backup has failed."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/backup-failed"
+
+      - alert: BackupOverdue
+        expr: time() - virtualqueue_last_backup_timestamp > 86400
+        for: 0m
+        labels:
+          severity: warning
+          service: backup
+          team: platform
+        annotations:
+          summary: "Backup overdue"
+          description: "No backup has been completed in the last 24 hours."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/backup-overdue"
+
+      # Business Logic Alerts
+      - alert: TenantServiceDown
+        expr: up{job="tenant-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: tenants
+          team: business
+        annotations:
+          summary: "Tenant service is down"
+          description: "Tenant service has been down for more than 1 minute."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/tenant-down"
+
+      - alert: HighTenantCount
+        expr: virtualqueue_tenants_active_total > 100
+        for: 5m
+        labels:
+          severity: info
+          service: tenants
+          team: business
+        annotations:
+          summary: "High tenant count"
+          description: "Active tenant count is {{ $value }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-tenant-count"
+
+      - alert: UserRegistrationSpike
+        expr: rate(virtualqueue_users_registered_total[5m]) > 50
+        for: 2m
+        labels:
+          severity: info
+          service: users
+          team: business
+        annotations:
+          summary: "User registration spike"
+          description: "User registration rate is {{ $value }} users/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/user-spike"
+
+      # Integration Alerts
+      - alert: IntegrationServiceDown
+        expr: up{job="integration-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: integrations
+          team: platform
+        annotations:
+          summary: "Integration service is down"
+          description: "Integration service has been down for more than 1 minute."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/integration-down"
+
+      - alert: IntegrationFailureRate
+        expr: rate(virtualqueue_integrations_failed_total[5m]) / rate(virtualqueue_integrations_called_total[5m]) > 0.3
+        for: 2m
+        labels:
+          severity: warning
+          service: integrations
+          team: platform
+        annotations:
+          summary: "High integration failure rate"
+          description: "Integration failure rate is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/integration-failures"

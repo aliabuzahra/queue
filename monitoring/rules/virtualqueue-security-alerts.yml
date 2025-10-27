@@ -1,0 +1,326 @@
+# Virtual Queue Management System - Security & Compliance Alerts
+# This file contains alert rules for security monitoring and compliance
+
+groups:
+  - name: virtualqueue.security
+    rules:
+      # Authentication & Authorization Alerts
+      - alert: AuthenticationServiceDown
+        expr: up{job="auth-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+          team: security
+        annotations:
+          summary: "Authentication service is down"
+          description: "Authentication service has been down for more than 1 minute."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/auth-service-down"
+
+      - alert: HighAuthenticationFailures
+        expr: rate(virtualqueue_auth_failures_total[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate is {{ $value }} failures/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/high-auth-failures"
+
+      - alert: BruteForceAttack
+        expr: rate(virtualqueue_auth_failures_total[5m]) by (client_ip) > 10
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+          team: security
+        annotations:
+          summary: "Potential brute force attack"
+          description: "High auth failures from {{ $labels.client_ip }}: {{ $value }} failures/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/brute-force"
+
+      - alert: SuspiciousLoginPattern
+        expr: count by (user_id) (rate(virtualqueue_logins_total[5m]) by (user_id) > 5) > 3
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Suspicious login pattern"
+          description: "Multiple users showing high login rates."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/suspicious-login"
+
+      # API Security Alerts
+      - alert: APIKeyAbuse
+        expr: rate(http_requests_total[5m]) by (api_key) > 1000
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "API key abuse detected"
+          description: "High request rate from API key {{ $labels.api_key }}: {{ $value }} req/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/api-key-abuse"
+
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(http_requests_total{status="401"}[5m]) > 50
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "High unauthorized access attempts"
+          description: "Unauthorized access rate is {{ $value }} attempts/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/unauthorized-access"
+
+      - alert: ForbiddenAccessAttempts
+        expr: rate(http_requests_total{status="403"}[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "High forbidden access attempts"
+          description: "Forbidden access rate is {{ $value }} attempts/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/forbidden-access"
+
+      - alert: SuspiciousUserAgent
+        expr: count by (user_agent) (rate(http_requests_total[5m]) by (user_agent) > 100) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Suspicious user agent detected"
+          description: "High request rate from suspicious user agents."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/suspicious-user-agent"
+
+      # Rate Limiting Alerts
+      - alert: RateLimitViolations
+        expr: rate(virtualqueue_rate_limit_violations_total[5m]) > 100
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "High rate limit violations"
+          description: "Rate limit violation rate is {{ $value }} violations/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/rate-limit-violations"
+
+      - alert: DDoSAttack
+        expr: count by (client_ip) (rate(http_requests_total[1m]) by (client_ip) > 100) > 10
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+          team: security
+        annotations:
+          summary: "Potential DDoS attack"
+          description: "Multiple IPs showing high request rates."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/ddos-attack"
+
+      # Data Security Alerts
+      - alert: SensitiveDataAccess
+        expr: rate(virtualqueue_sensitive_data_access_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "High sensitive data access"
+          description: "Sensitive data access rate is {{ $value }} accesses/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/sensitive-data-access"
+
+      - alert: DataExportAnomaly
+        expr: rate(virtualqueue_data_export_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Unusual data export activity"
+          description: "Data export rate is {{ $value }} exports/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/data-export-anomaly"
+
+      - alert: CrossTenantAccess
+        expr: rate(virtualqueue_cross_tenant_access_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: security
+          team: security
+        annotations:
+          summary: "Cross-tenant access detected"
+          description: "Unauthorized cross-tenant access detected."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/cross-tenant-access"
+
+      # Compliance Alerts
+      - alert: AuditLogFailure
+        expr: rate(virtualqueue_audit_log_failures_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: compliance
+          team: security
+        annotations:
+          summary: "Audit log failure"
+          description: "Audit logging is failing."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/audit-log-failure"
+
+      - alert: DataRetentionViolation
+        expr: virtualqueue_data_retention_violations_total > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: compliance
+          team: security
+        annotations:
+          summary: "Data retention violation"
+          description: "Data retention policy violation detected."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/data-retention-violation"
+
+      - alert: PrivacyPolicyViolation
+        expr: rate(virtualqueue_privacy_violations_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: compliance
+          team: security
+        annotations:
+          summary: "Privacy policy violation"
+          description: "Privacy policy violation detected."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/privacy-violation"
+
+      # Encryption & Certificate Alerts
+      - alert: SSLCertificateExpiring
+        expr: (ssl_cert_not_after - time()) / 86400 < 30
+        for: 0m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate expires in {{ $value }} days."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/ssl-expiring"
+
+      - alert: SSLCertificateExpired
+        expr: ssl_cert_not_after < time()
+        for: 0m
+        labels:
+          severity: critical
+          service: security
+          team: security
+        annotations:
+          summary: "SSL certificate expired"
+          description: "SSL certificate has expired."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/ssl-expired"
+
+      - alert: EncryptionFailure
+        expr: rate(virtualqueue_encryption_failures_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: security
+          team: security
+        annotations:
+          summary: "Encryption failure"
+          description: "Data encryption is failing."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/encryption-failure"
+
+      # Session Security Alerts
+      - alert: SessionHijacking
+        expr: rate(virtualqueue_session_hijacking_attempts_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: security
+          team: security
+        annotations:
+          summary: "Session hijacking attempt"
+          description: "Potential session hijacking attempt detected."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/session-hijacking"
+
+      - alert: ConcurrentSessions
+        expr: virtualqueue_concurrent_sessions_per_user > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "High concurrent sessions"
+          description: "User has {{ $value }} concurrent sessions."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/concurrent-sessions"
+
+      - alert: SessionTimeoutAnomaly
+        expr: virtualqueue_session_duration_seconds > 86400
+        for: 0m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Unusual session duration"
+          description: "Session duration is {{ $value }}s (24+ hours)."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/session-timeout"
+
+      # Geographic Security Alerts
+      - alert: UnusualGeographicAccess
+        expr: count by (country) (rate(http_requests_total[5m]) by (country) > 10) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Unusual geographic access"
+          description: "High request rate from multiple countries."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/geographic-access"
+
+      - alert: BlockedCountryAccess
+        expr: rate(http_requests_total{country=~"CN|RU|KP"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Access from blocked country"
+          description: "Requests from blocked country {{ $labels.country }}."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/blocked-country"
+
+      # Security Policy Alerts
+      - alert: PasswordPolicyViolation
+        expr: rate(virtualqueue_password_policy_violations_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Password policy violations"
+          description: "Password policy violation rate is {{ $value }} violations/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/password-policy"
+
+      - alert: TwoFactorAuthFailure
+        expr: rate(virtualqueue_2fa_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "High 2FA failure rate"
+          description: "Two-factor authentication failure rate is {{ $value }} failures/sec."
+          runbook_url: "https://docs.virtualqueue.com/runbooks/2fa-failures"

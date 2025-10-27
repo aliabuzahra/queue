@@ -1,0 +1,75 @@
+# Docker ignore file for Virtual Queue Management System
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+README.md
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Environment files
+.env*
+env.*
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+bin/
+obj/
+out/
+build/
+dist/
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules (if any)
+node_modules/
+
+# Package files
+*.nupkg
+*.snupkg
+
+# Backup files
+*.bak
+*.backup
+
+# Monitoring files
+monitoring/
+
+# Scripts
+scripts/
+
+# Test files
+tests/
+*Tests/

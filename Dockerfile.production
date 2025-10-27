@@ -1,0 +1,53 @@
+# Virtual Queue Management System - Production Dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy solution file if it exists
+COPY *.sln ./
+
+# Copy project files
+COPY ["src/VirtualQueue.Api/VirtualQueue.Api.csproj", "src/VirtualQueue.Api/"]
+COPY ["src/VirtualQueue.Application/VirtualQueue.Application.csproj", "src/VirtualQueue.Application/"]
+COPY ["src/VirtualQueue.Domain/VirtualQueue.Domain.csproj", "src/VirtualQueue.Domain/"]
+COPY ["src/VirtualQueue.Infrastructure/VirtualQueue.Infrastructure.csproj", "src/VirtualQueue.Infrastructure/"]
+
+# Restore dependencies
+RUN dotnet restore "src/VirtualQueue.Api/VirtualQueue.Api.csproj" --verbosity normal
+
+# Copy all source code
+COPY . .
+
+# Build the application
+WORKDIR "/src/src/VirtualQueue.Api"
+RUN dotnet build "VirtualQueue.Api.csproj" -c Release -o /app/build --no-restore --verbosity normal
+
+FROM build AS publish
+RUN dotnet publish "VirtualQueue.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false --no-build
+
+FROM base AS final
+WORKDIR /app
+
+# Create non-root user
+RUN groupadd -r virtualqueue && useradd -r -g virtualqueue virtualqueue
+
+# Copy published application
+COPY --from=publish /app/publish .
+
+# Create logs directory
+RUN mkdir -p /app/logs && chown -R virtualqueue:virtualqueue /app
+
+# Switch to non-root user
+USER virtualqueue
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8080/healthz || exit 1
+
+ENTRYPOINT ["dotnet", "VirtualQueue.Api.dll"]

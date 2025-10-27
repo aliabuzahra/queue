@@ -1,0 +1,13 @@
+# Grafana Dashboard Configuration
+apiVersion: 1
+
+providers:
+  - name: 'Virtual Queue Dashboards'
+    orgId: 1
+    folder: 'Virtual Queue Management System'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

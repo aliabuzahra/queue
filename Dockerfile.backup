@@ -1,0 +1,61 @@
+# Virtual Queue Management System - Backup Service Docker Container
+
+FROM alpine:latest
+
+# Install required packages
+RUN apk add --no-cache \
+    postgresql-client \
+    redis \
+    bash \
+    curl \
+    tar \
+    gzip \
+    openssl \
+    mailx \
+    aws-cli \
+    azure-cli \
+    google-cloud-sdk
+
+# Create backup user
+RUN adduser -D -s /bin/bash backup
+
+# Create backup directories
+RUN mkdir -p /backups /var/log /scripts
+RUN chown -R backup:backup /backups /var/log /scripts
+
+# Copy backup scripts
+COPY scripts/backup.sh /scripts/backup.sh
+COPY scripts/restore.sh /scripts/restore.sh
+COPY scripts/backup.conf /scripts/backup.conf
+
+# Make scripts executable
+RUN chmod +x /scripts/backup.sh /scripts/restore.sh
+
+# Set up cron job
+RUN echo "0 2 * * * /scripts/backup.sh >> /var/log/backup.log 2>&1" | crontab -
+
+# Create backup service script
+RUN cat > /scripts/backup-service.sh << 'EOF'
+#!/bin/bash
+
+# Load configuration
+source /scripts/backup.conf
+
+# Start cron daemon
+crond -f -l 2
+EOF
+
+RUN chmod +x /scripts/backup-service.sh
+
+# Switch to backup user
+USER backup
+
+# Expose backup directory
+VOLUME ["/backups"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD test -f /var/log/backup.log || exit 1
+
+# Start backup service
+CMD ["/scripts/backup-service.sh"]
