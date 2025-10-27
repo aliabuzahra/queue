@@ -68,3 +68,8 @@ coverage/
 *.coverage
 *.coveragexml
 
+
+# Environment variables
+.env
+.env.local
+.env.*.local
