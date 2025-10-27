@@ -190,7 +190,7 @@ groups:
           runbook_url: "https://docs.virtualqueue.com/runbooks/low-quality"
 
       - alert: HighErrorRateByEndpoint
-        expr: rate(http_requests_total{status=~"5.."}[5m]) by (endpoint) / rate(http_requests_total[5m]) by (endpoint) > 0.1
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) by (endpoint) / rate(http_requests_total[5m]) by (endpoint)) > 0.1
         for: 2m
         labels:
           severity: warning

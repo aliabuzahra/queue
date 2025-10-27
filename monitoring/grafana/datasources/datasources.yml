@@ -19,6 +19,7 @@ datasources:
     url: postgres:5432
     database: virtualqueue_prod
     user: virtualqueue_user
+    isDefault: false
     secureJsonData:
       password: ${DB_PASSWORD}
     jsonData:
@@ -33,6 +34,7 @@ datasources:
     type: redis-datasource
     access: proxy
     url: redis:6379
+    isDefault: false
     jsonData:
       client: standalone
       poolSize: 5

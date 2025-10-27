@@ -24,11 +24,8 @@ RUN dotnet restore VirtualQueue.sln
 # Copy all source code
 COPY src/ src/
 
-# Build the application
-RUN dotnet build VirtualQueue.sln -c Release --no-restore
-
-# Publish the API
-RUN dotnet publish src/VirtualQueue.Api/VirtualQueue.Api.csproj -c Release -o /app/publish --no-build
+# Build and publish the application
+RUN dotnet publish src/VirtualQueue.Api/VirtualQueue.Api.csproj -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app

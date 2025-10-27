@@ -4,7 +4,7 @@ global:
   evaluation_interval: 15s
 
 rule_files:
-  - "rules/*.yml"
+  # - "rules/*.yml"  # Temporarily disabled due to syntax errors
 
 alerting:
   alertmanagers:
@@ -29,29 +29,17 @@ scrape_configs:
   # PostgreSQL Database
   - job_name: 'postgres'
     static_configs:
-      - targets: ['postgres-exporter:9187']
+      - targets: ['virtualqueue-postgres-exporter:9187']
     scrape_interval: 30s
 
   # Redis Cache
   - job_name: 'redis'
     static_configs:
-      - targets: ['redis-exporter:9121']
+      - targets: ['virtualqueue-redis-exporter:9121']
     scrape_interval: 30s
 
   # Node Exporter (System Metrics)
   - job_name: 'node'
     static_configs:
-      - targets: ['node-exporter:9100']
-    scrape_interval: 30s
-
-  # Nginx (if using reverse proxy)
-  - job_name: 'nginx'
-    static_configs:
-      - targets: ['nginx-exporter:9113']
-    scrape_interval: 30s
-
-  # Grafana
-  - job_name: 'grafana'
-    static_configs:
-      - targets: ['grafana:3000']
+      - targets: ['virtualqueue-node-exporter:9100']
     scrape_interval: 30s

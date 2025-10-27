@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">You're In Line - Please Wait</title>
+    <script src="https://unpkg.com/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style id="dynamicStyles">
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #0056b3;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-lg: 0 4px 12px rgba(0,0,0,0.15);
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-primary);
+        }
+
+        .waiting-container {
+            max-width: 600px;
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .waiting-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: var(--primary-color);
+        }
+
+        .tenant-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tenant-logo {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .tenant-info {
+            text-align: left;
+        }
+
+        .tenant-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .tenant-tagline {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .position-card {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .position-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .position-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .position-number {
+            font-size: 64px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .estimated-time {
+            font-size: 16px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .progress-section {
+            margin: 30px 0;
+        }
+
+        .progress-bar-container {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            background: var(--primary-color);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: var(--bg-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 20px 0;
+        }
+
+        .status-waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-released {
+            background: #d1edff;
+            color: #0056b3;
+        }
+
+        .status-serving {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .message-box {
+            background: #f8f9fa;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-box h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .message-box p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .info-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: var(--bg-color);
+            border-radius: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .loading-dots {
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        .loading-dots span {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            margin: 0 3px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .action-button {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .action-button:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .tenant-branding {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .queue-custom-message {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            .waiting-container {
+                padding: 30px 20px;
+            }
+
+            .position-number {
+                font-size: 48px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tenant-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .tenant-info {
+                text-align: center;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .waiting-container {
+                background: #1a1a1a;
+                color: #ffffff;
+            }
+
+            .stat-card {
+                background: #2d2d2d;
+            }
+
+            .message-box {
+                background: #2d2d2d;
+            }
+
+            .info-section {
+                background: #2d2d2d;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="waiting-container" id="waitingContainer">
+        <!-- Tenant Header -->
+        <div class="tenant-header" id="tenantHeader">
+            <div class="tenant-logo" id="tenantLogo">⏱️</div>
+            <div class="tenant-info">
+                <div class="tenant-name" id="tenantName">Loading...</div>
+                <div class="tenant-tagline" id="tenantTagline">Please wait</div>
+            </div>
+        </div>
+
+        <div class="logo" id="mainLogo">⏱️</div>
+        <h1 id="mainTitle">You're In Line</h1>
+        <p class="subtitle" id="subtitle">Please wait while we connect you to an agent</p>
+
+        <!-- Queue Custom Message -->
+        <div class="queue-custom-message" id="queueMessage" style="display: none;">
+            <strong>📢 Message:</strong> <span id="queueMessageText"></span>
+        </div>
+
+        <div class="position-card">
+            <div class="position-label">Your Position in Queue</div>
+            <div class="position-number" id="positionNumber">-</div>
+            <div class="estimated-time">Est. wait time: <span id="estimatedTime">Calculating...</span></div>
+        </div>
+
+        <div class="status-badge status-waiting" id="statusBadge">⏳ Waiting</div>
+
+        <div class="progress-section">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+            <p style="font-size: 14px; color: var(--text-secondary);" id="progressText">Connecting to queue...</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalWaiting">0</div>
+                <div class="stat-label">Ahead</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalServing">0</div>
+                <div class="stat-label">Serving</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalCompleted">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+        </div>
+
+        <div class="message-box" id="messageBox" style="display: none;">
+            <h3 id="messageTitle">Update</h3>
+            <p id="messageText">No updates at this time.</p>
+        </div>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span class="info-label">Joined at:</span>
+                <span class="info-value" id="joinedAt">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Queue ID:</span>
+                <span class="info-value" id="queueId">-</span>
+            </div>
+            <div class="info-row" id="queueNameRow" style="display: none;">
+                <span class="info-label">Queue Name:</span>
+                <span class="info-value" id="queueName">-</span>
+            </div>
+            <div class="info-row" id="userIdRow">
+                <span class="info-label">User ID:</span>
+                <span class="info-value" id="userId">-</span>
+            </div>
+        </div>
+
+        <div class="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <p class="tenant-branding" id="tenantBranding">Virtual Queue System</p>
+
+        <button class="action-button" id="leaveButton" style="display: none;">Leave Queue</button>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            tenantId: getUrlParameter('tenantId') || '',
+            queueId: getUrlParameter('queueId') || '',
+            userIdentifier: getUrlParameter('userId') || generateUserId(),
+            hubUrl: '/queuehub',
+            apiUrl: '/api/v1',
+            themeConfig: null
+        };
+
+        let connection = null;
+        let currentPosition = 0;
+        let totalWaiting = 0;
+        let totalServing = 0;
+        let totalCompleted = 0;
+        let tenantInfo = null;
+        let queueInfo = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!CONFIG.tenantId || !CONFIG.queueId) {
+                showError('Missing required parameters: tenantId and queueId are required');
+                return;
+            }
+
+            initializeUI();
+            await loadTenantConfiguration();
+            await loadQueueInformation();
+            connectToHub();
+        });
+
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        function generateUserId() {
+            return `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+
+        function initializeUI() {
+            document.getElementById('queueId').textContent = CONFIG.queueId.substring(0, 8) + '...';
+            document.getElementById('userId').textContent = CONFIG.userIdentifier.substring(0, 16) + '...';
+            document.getElementById('joinedAt').textContent = new Date().toLocaleTimeString();
+            
+            document.getElementById('leaveButton').addEventListener('click', () => {
+                if (confirm('Are you sure you want to leave the queue?')) {
+                    leaveQueue();
+                }
+            });
+
+            // Show leave button after 5 seconds
+            setTimeout(() => {
+                document.getElementById('leaveButton').style.display = 'block';
+            }, 5000);
+        }
+
+        async function loadTenantConfiguration() {
+            try {
+                const response = await fetch(`${CONFIG.apiUrl}/tenants/${CONFIG.tenantId}`);
+                if (response.ok) {
+                    tenantInfo = await response.json();
+                    applyTenantTheme(tenantInfo);
+                }
+            } catch (error) {
+                console.error('Failed to load tenant configuration:', error);
+            }
+        }
+
+        async function loadQueueInformation() {
+            try {
+                const response = await fetch(`${CONFIG.apiUrl}/tenants/${CONFIG.tenantId}/queues/${CONFIG.queueId}`);
+                if (response.ok) {
+                    queueInfo = await response.json();
+                    displayQueueInfo(queueInfo);
+                }
+            } catch (error) {
+                console.error('Failed to load queue information:', error);
+            }
+        }
+
+        function applyTenantTheme(tenant) {
+            // Update tenant branding
+            if (tenant.name) {
+                document.getElementById('tenantName').textContent = tenant.name;
+                document.getElementById('pageTitle').textContent = `Waiting - ${tenant.name}`;
+            }
+
+            if (tenant.domain) {
+                document.getElementById('tenantTagline').textContent = `${tenant.domain}`;
+            }
+
+            // Apply custom theme if available
+            if (tenant.theme) {
+                applyTheme(tenant.theme);
+            }
+
+            // Update branding
+            if (tenant.branding) {
+                document.getElementById('tenantBranding').textContent = tenant.branding.text || 'Virtual Queue System';
+                
+                if (tenant.branding.logo) {
+                    document.getElementById('tenantLogo').textContent = tenant.branding.logo;
+                    document.getElementById('mainLogo').textContent = tenant.branding.logo;
+                }
+
+                if (tenant.branding.title) {
+                    document.getElementById('mainTitle').textContent = tenant.branding.title;
+                }
+
+                if (tenant.branding.subtitle) {
+                    document.getElementById('subtitle').textContent = tenant.branding.subtitle;
+                }
+            }
+        }
+
+        function applyTheme(theme) {
+            const root = document.documentElement;
+            const styleElement = document.getElementById('dynamicStyles');
+
+            if (theme.primaryColor) {
+                root.style.setProperty('--primary-color', theme.primaryColor);
+                styleElement.textContent += `\n--primary-color: ${theme.primaryColor};`;
+            }
+
+            if (theme.secondaryColor) {
+                root.style.setProperty('--secondary-color', theme.secondaryColor);
+            }
+
+            if (theme.backgroundColor) {
+                root.style.setProperty('--bg-gradient', `linear-gradient(135deg, ${theme.backgroundColor} 0%, ${theme.secondaryColor || theme.backgroundColor} 100%)`);
+            }
+
+            if (theme.cardColor) {
+                root.style.setProperty('--card-bg', theme.cardColor);
+            }
+        }
+
+        function displayQueueInfo(queue) {
+            if (queue.name) {
+                document.getElementById('queueName').textContent = queue.name;
+                document.getElementById('queueNameRow').style.display = 'flex';
+            }
+
+            if (queue.customMessage) {
+                document.getElementById('queueMessage').style.display = 'block';
+                document.getElementById('queueMessageText').textContent = queue.customMessage;
+            }
+        }
+
+        function connectToHub() {
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl(CONFIG.hubUrl)
+                .build();
+
+            connection.start()
+                .then(() => {
+                    console.log('Connected to SignalR hub');
+                    joinQueue();
+                    setupEventListeners();
+                    updateMessage('Connected', 'You have been successfully connected to the queue.');
+                })
+                .catch(err => {
+                    console.error('Connection failed:', err);
+                    updateMessage('Connection Error', 'Could not connect to server. Please refresh the page.');
+                });
+        }
+
+        function joinQueue() {
+            if (connection) {
+                connection.invoke("JoinQueueGroup", CONFIG.queueId)
+                    .then(() => {
+                        console.log('Joined queue group');
+                    })
+                    .catch(err => console.error('Failed to join queue:', err));
+            }
+        }
+
+        function setupEventListeners() {
+            if (!connection) return;
+
+            connection.on("PositionUpdated", (data) => {
+                currentPosition = data.position;
+                updatePositionUI(data.position, data.totalAhead);
+            });
+
+            connection.on("QueueStatistics", (data) => {
+                updateStatistics(data);
+            });
+
+            connection.on("UserReleased", (data) => {
+                showReleasedMessage();
+            });
+
+            connection.on("Error", (message) => {
+                updateMessage('Error', message);
+            });
+        }
+
+        function updatePositionUI(position, totalAhead) {
+            const positionElement = document.getElementById('positionNumber');
+            const totalAheadElement = document.getElementById('totalWaiting');
+            
+            positionElement.textContent = position;
+            totalAheadElement.textContent = totalAhead;
+            
+            // Calculate and update estimated time
+            const estimatedMinutes = Math.ceil(totalAhead / 2);
+            const timeElement = document.getElementById('estimatedTime');
+            timeElement.textContent = estimatedMinutes > 0 
+                ? `~${estimatedMinutes} minute${estimatedMinutes > 1 ? 's' : ''}`
+                : 'Almost there!';
+            
+            // Update progress bar
+            const maxUsers = Math.max(100, totalAhead + 20);
+            const progress = ((maxUsers - totalAhead) / maxUsers) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('progressText').textContent = 
+                totalAhead > 0 ? `${totalAhead} ahead of you` : 'You are next!';
+        }
+
+        function updateStatistics(data) {
+            totalWaiting = data.totalWaiting || 0;
+            totalServing = data.totalServing || 0;
+            totalCompleted = data.totalCompleted || 0;
+            
+            document.getElementById('totalWaiting').textContent = totalWaiting;
+            document.getElementById('totalServing').textContent = totalServing;
+            document.getElementById('totalCompleted').textContent = totalCompleted;
+        }
+
+        function showReleasedMessage() {
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.className = 'status-badge status-released';
+            statusBadge.textContent = '✓ You\'ve Been Released!';
+            
+            updateMessage('Success', 'Your turn has arrived! An agent will be with you shortly.');
+            
+            setTimeout(() => {
+                alert('You have been connected to an agent. Redirecting...');
+            }, 2000);
+        }
+
+        function updateMessage(title, text) {
+            const messageBox = document.getElementById('messageBox');
+            const messageTitle = document.getElementById('messageTitle');
+            const messageText = document.getElementById('messageText');
+            
+            messageTitle.textContent = title;
+            messageText.textContent = text;
+            messageBox.style.display = 'block';
+        }
+
+        function showError(message) {
+            document.getElementById('waitingContainer').innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h2 style="color: #dc3545; margin-bottom: 20px;">Error</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">${message}</p>
+                    <button onclick="location.reload()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Reload Page
+                    </button>
+                </div>
+            `;
+        }
+
+        function leaveQueue() {
+            if (connection) {
+                connection.invoke("LeaveQueueGroup", CONFIG.queueId)
+                    .then(() => {
+                        connection.stop();
+                        updateMessage('Left Queue', 'You have left the queue.');
+                        document.getElementById('leaveButton').style.display = 'none';
+                    })
+                    .catch(err => console.error('Failed to leave queue:', err));
+            }
+        }
+    </script>
+</body>
+</html>

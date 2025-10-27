@@ -1,0 +1,57 @@
+{
+  "theme": {
+    "primaryColor": "#007bff",
+    "secondaryColor": "#0056b3",
+    "successColor": "#28a745",
+    "warningColor": "#ffc107",
+    "dangerColor": "#dc3545",
+    "backgroundGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    "cardBackground": "#ffffff",
+    "textPrimary": "#212529",
+    "textSecondary": "#6c757d"
+  },
+  "branding": {
+    "logo": "⏱️",
+    "title": "You're In Line",
+    "subtitle": "Please wait while we connect you to an agent",
+    "tenantName": "Virtual Queue System",
+    "showTenantBranding": true
+  },
+  "messages": {
+    "waiting": "⏳ Waiting",
+    "released": "✓ You've Been Released!",
+    "estimatedTimePrefix": "Est. wait time:",
+    "positionLabel": "Your Position in Queue",
+    "aheadLabel": "Ahead of You",
+    "servingLabel": "Being Served"
+  },
+  "features": {
+    "showProgressBar": true,
+    "showStatistics": true,
+    "showEstimatedTime": true,
+    "showMessageBox": true,
+    "showLeaveButton": true,
+    "leaveButtonDelay": 5000,
+    "autoRefreshEnabled": true,
+    "refreshInterval": 3000
+  },
+  "layout": {
+    "maxWidth": "500px",
+    "padding": "40px",
+    "borderRadius": "20px",
+    "showLoadingAnimation": true
+  },
+  "customizations": {
+    "primaryLogoIcon": "⏱️",
+    "customCSS": "",
+    "customJavaScript": "",
+    "analyticsEnabled": false,
+    "analyticsTrackingId": ""
+  },
+  "localization": {
+    "language": "en",
+    "timezone": "America/New_York",
+    "dateFormat": "MM/DD/YYYY",
+    "timeFormat": "12h"
+  }
+}

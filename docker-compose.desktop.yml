@@ -13,12 +13,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=virtualqueue_prod
-      - DB_USER=virtualqueue_user
-      - DB_PASSWORD=${DB_PASSWORD:-VirtualQueue123!}
-      - REDIS_CONNECTION_STRING=redis:6379
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=virtualqueue_prod;Username=virtualqueue_user;Password=VirtualQueue123!
+      - ConnectionStrings__Redis=redis:6379,password=Redis123!
       - REDIS_PASSWORD=${REDIS_PASSWORD:-Redis123!}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-YourSuperSecretKeyThatIsAtLeast32CharactersLong!}
       - JWT_ISSUER=VirtualQueue-Production

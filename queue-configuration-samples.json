@@ -1,0 +1,283 @@
+{
+  "queueConfigurations": {
+    "basicQueue": {
+      "name": "Customer Support Queue",
+      "description": "General customer support queue for all inquiries",
+      "maxConcurrentUsers": 10,
+      "releaseRatePerMinute": 5,
+      "isActive": true,
+      "schedule": {
+        "businessHours": {
+          "startTime": "09:00:00",
+          "endTime": "17:00:00",
+          "workingDays": [1, 2, 3, 4, 5],
+          "timeZone": "America/New_York"
+        },
+        "startDate": null,
+        "endDate": null,
+        "isRecurring": true,
+        "specificDates": []
+      }
+    },
+    
+    "extendedHoursQueue": {
+      "name": "24/7 Emergency Support",
+      "description": "Round-the-clock emergency support queue",
+      "maxConcurrentUsers": 5,
+      "releaseRatePerMinute": 2,
+      "isActive": true,
+      "schedule": {
+        "businessHours": {
+          "startTime": "00:00:00",
+          "endTime": "23:59:59",
+          "workingDays": [0, 1, 2, 3, 4, 5, 6],
+          "timeZone": "UTC"
+        },
+        "startDate": null,
+        "endDate": null,
+        "isRecurring": true,
+        "specificDates": []
+      }
+    },
+    
+    "weekendOnlyQueue": {
+      "name": "Weekend Support",
+      "description": "Support available only on weekends",
+      "maxConcurrentUsers": 3,
+      "releaseRatePerMinute": 1,
+      "isActive": true,
+      "schedule": {
+        "businessHours": {
+          "startTime": "10:00:00",
+          "endTime": "18:00:00",
+          "workingDays": [0, 6],
+          "timeZone": "America/Los_Angeles"
+        },
+        "startDate": null,
+        "endDate": null,
+        "isRecurring": true,
+        "specificDates": []
+      }
+    },
+    
+    "limitedTimeQueue": {
+      "name": "Black Friday Sale Support",
+      "description": "Special support queue for Black Friday sale period",
+      "maxConcurrentUsers": 50,
+      "releaseRatePerMinute": 20,
+      "isActive": true,
+      "schedule": {
+        "businessHours": {
+          "startTime": "00:00:00",
+          "endTime": "23:59:59",
+          "workingDays": [0, 1, 2, 3, 4, 5, 6],
+          "timeZone": "America/New_York"
+        },
+        "startDate": "2024-11-29T00:00:00Z",
+        "endDate": "2024-12-02T23:59:59Z",
+        "isRecurring": false,
+        "specificDates": []
+      }
+    },
+    
+    "specificDatesQueue": {
+      "name": "Holiday Support",
+      "description": "Support queue for specific holiday dates",
+      "maxConcurrentUsers": 8,
+      "releaseRatePerMinute": 3,
+      "isActive": true,
+      "schedule": {
+        "businessHours": {
+          "startTime": "08:00:00",
+          "endTime": "20:00:00",
+          "workingDays": [1, 2, 3, 4, 5],
+          "timeZone": "Europe/London"
+        },
+        "startDate": null,
+        "endDate": null,
+        "isRecurring": false,
+        "specificDates": [
+          "2024-12-25T08:00:00Z",
+          "2024-12-26T08:00:00Z",
+          "2025-01-01T08:00:00Z",
+          "2025-01-02T08:00:00Z"
+        ]
+      }
+    },
+    
+    "multiTimezoneQueue": {
+      "name": "Global Support Queue",
+      "description": "Support queue covering multiple time zones",
+      "maxConcurrentUsers": 25,
+      "releaseRatePerMinute": 8,
+      "isActive": true,
+      "schedule": {
+        "businessHours": {
+          "startTime": "08:00:00",
+          "endTime": "22:00:00",
+          "workingDays": [1, 2, 3, 4, 5],
+          "timeZone": "UTC"
+        },
+        "startDate": null,
+        "endDate": null,
+        "isRecurring": true,
+        "specificDates": []
+      }
+    },
+    
+    "highVolumeQueue": {
+      "name": "Product Launch Queue",
+      "description": "High-capacity queue for product launch events",
+      "maxConcurrentUsers": 100,
+      "releaseRatePerMinute": 50,
+      "isActive": true,
+      "schedule": {
+        "businessHours": {
+          "startTime": "09:00:00",
+          "endTime": "21:00:00",
+          "workingDays": [1, 2, 3, 4, 5, 6],
+          "timeZone": "America/New_York"
+        },
+        "startDate": "2024-03-15T09:00:00Z",
+        "endDate": "2024-03-22T21:00:00Z",
+        "isRecurring": false,
+        "specificDates": []
+      }
+    },
+    
+    "lowVolumeQueue": {
+      "name": "Premium Customer Queue",
+      "description": "Exclusive queue for premium customers",
+      "maxConcurrentUsers": 2,
+      "releaseRatePerMinute": 1,
+      "isActive": true,
+      "schedule": {
+        "businessHours": {
+          "startTime": "10:00:00",
+          "endTime": "16:00:00",
+          "workingDays": [1, 2, 3, 4, 5],
+          "timeZone": "America/Chicago"
+        },
+        "startDate": null,
+        "endDate": null,
+        "isRecurring": true,
+        "specificDates": []
+      }
+    }
+  },
+  
+  "queueTemplateExamples": {
+    "standardBusinessHours": {
+      "name": "Standard Business Hours Template",
+      "description": "Template for standard 9-5 business hours",
+      "templateType": "BusinessHours",
+      "maxConcurrentUsers": 10,
+      "releaseRatePerMinute": 5,
+      "scheduleJson": {
+        "businessHours": {
+          "startTime": "09:00:00",
+          "endTime": "17:00:00",
+          "workingDays": [1, 2, 3, 4, 5],
+          "timeZone": "America/New_York"
+        },
+        "isRecurring": true
+      },
+      "businessRulesJson": {
+        "priorityRules": {
+          "vip": { "multiplier": 2.0 },
+          "high": { "multiplier": 1.5 },
+          "normal": { "multiplier": 1.0 }
+        },
+        "maxWaitTime": "PT2H",
+        "autoRelease": true
+      },
+      "notificationSettingsJson": {
+        "emailNotifications": true,
+        "smsNotifications": false,
+        "pushNotifications": true,
+        "reminderIntervals": ["PT30M", "PT1H", "PT2H"]
+      },
+      "isPublic": true,
+      "isActive": true
+    },
+    
+    "eventBasedTemplate": {
+      "name": "Event-Based Queue Template",
+      "description": "Template for special events and promotions",
+      "templateType": "Event",
+      "maxConcurrentUsers": 50,
+      "releaseRatePerMinute": 20,
+      "scheduleJson": {
+        "businessHours": {
+          "startTime": "00:00:00",
+          "endTime": "23:59:59",
+          "workingDays": [0, 1, 2, 3, 4, 5, 6],
+          "timeZone": "UTC"
+        },
+        "isRecurring": false,
+        "specificDates": []
+      },
+      "businessRulesJson": {
+        "priorityRules": {
+          "premium": { "multiplier": 3.0 },
+          "vip": { "multiplier": 2.0 },
+          "normal": { "multiplier": 1.0 }
+        },
+        "maxWaitTime": "PT4H",
+        "autoRelease": false,
+        "eventSpecificRules": {
+          "earlyAccess": true,
+          "exclusiveAccess": false
+        }
+      },
+      "notificationSettingsJson": {
+        "emailNotifications": true,
+        "smsNotifications": true,
+        "pushNotifications": true,
+        "reminderIntervals": ["PT15M", "PT30M", "PT1H", "PT2H"],
+        "eventNotifications": true
+      },
+      "isPublic": false,
+      "isActive": true
+    }
+  },
+  
+  "configurationNotes": {
+    "timeFormats": {
+      "timeSpan": "HH:mm:ss format (e.g., '09:00:00')",
+      "dateTime": "ISO 8601 format (e.g., '2024-12-25T08:00:00Z')",
+      "duration": "ISO 8601 duration format (e.g., 'PT2H' for 2 hours)"
+    },
+    "workingDays": {
+      "0": "Sunday",
+      "1": "Monday", 
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    },
+    "timeZones": {
+      "common": [
+        "UTC",
+        "America/New_York",
+        "America/Chicago", 
+        "America/Denver",
+        "America/Los_Angeles",
+        "Europe/London",
+        "Europe/Paris",
+        "Asia/Tokyo",
+        "Asia/Shanghai",
+        "Australia/Sydney"
+      ]
+    },
+    "queueTypes": {
+      "standard": "Regular business hours queue",
+      "extended": "Extended hours queue",
+      "weekend": "Weekend-only queue",
+      "event": "Event-specific queue",
+      "premium": "High-priority customer queue",
+      "emergency": "24/7 emergency queue"
+    }
+  }
+}
